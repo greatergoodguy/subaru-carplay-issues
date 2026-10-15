@@ -108,6 +108,13 @@ def years_label(rows):
     return f"{ys[0]}–{ys[-1]}" if len(ys) > 1 else str(ys[0])
 
 
+def pct(n, total):
+    return f"{round(100 * n / total)}%" if total else "0%"
+
+
+SCREEN_TAGS = {"Black / frozen screen", "Rebooting", "Ghost touch / bubbling screen"}
+
+
 def is_cp(r):
     return bool({"CarPlay / Android Auto", "USB"} & set(r["tags"]))
 
@@ -172,7 +179,7 @@ def facts(rows, root):
     after_usb = sum(1 for r in rows if r["_filed"] >= USB_TSB_DATE)
     return f"""<div class="facts">
 <span class="fact"><b>{total}</b>owner complaints</span>
-<span class="fact"><b>{sum(1 for r in rows if is_cp(r))}</b>involve CarPlay, Android Auto, or USB</span>
+<span class="fact"><b>{pct(sum(1 for r in rows if r.get("safety")), total)}</b>describe a safety impact while driving</span>
 <a class="fact alert" href="{root}record/"><b>{after_usb}</b>filed after Subaru's USB fix bulletin (Oct 2023)</a>
 </div>"""
 
@@ -351,17 +358,23 @@ def model_chart(rows, root):
 def years_chart(rows):
     c = collections.Counter(r["_filed"].year for r in rows)
     ys = list(range(min(c), max(c) + 1))
-    mx = max(c.values())
+    running, cum = 0, {}
+    for y in ys:
+        running += c[y]
+        cum[y] = running
+    mx = cum[ys[-1]]
+    before_usb = sum(1 for r in rows if r["_filed"] < USB_TSB_DATE)
+    before_ext = sum(1 for r in rows if r["_filed"] < EXTENSION_DATE)
     events = {USB_TSB_DATE.year: "USB fix bulletin", EXTENSION_DATE.year: "Warranty extended"}
     cols = "".join(
-        f'<div class="col" title="{c[y]} complaints filed in {y}"><span class="v">{c[y]}</span><span class="f" style="height:{c[y] / mx * 100:.1f}%"></span></div>'
+        f'<div class="col" title="{cum[y]} complaints filed by the end of {y} ({c[y]} that year)"><span class="v">{cum[y]}</span><span class="f" style="height:{cum[y] / mx * 100:.1f}%"></span></div>'
         for y in ys)
     xs = "".join(f'<div>{y}{f"<span class=ev>▲ {events[y]}</span>" if y in events else ""}</div>' for y in ys)
-    return f"""<div class="card chart wide"><h3>Complaints keep coming after Subaru's fixes</h3>
-<p class="sub">Complaints filed with NHTSA per year, with the dates of Subaru's own bulletins</p>
-<div class="cols" role="img" aria-label="Complaints filed per year: {', '.join(f'{y}: {c[y]}' for y in ys)}">{cols}</div>
+    return f"""<div class="card chart wide"><h3>Complaints keep piling up</h3>
+<p class="sub">Running total of complaints filed with NHTSA, with the dates of Subaru's own bulletins</p>
+<div class="cols" role="img" aria-label="Running total of complaints by year: {', '.join(f'{y}: {cum[y]}' for y in ys)}">{cols}</div>
 <div class="colx">{xs}</div>
-<p class="foot">{ys[-1]} counts run through {RETRIEVED}.</p></div>"""
+<p class="foot">Each bar is the total filed through the end of that year ({ys[-1]} runs through {RETRIEVED}). {mx - before_usb} complaints came in after Subaru's USB fix bulletin, and {mx - before_ext} after the warranty extension.</p></div>"""
 
 
 def stats_page(rows, root):
@@ -370,8 +383,8 @@ def stats_page(rows, root):
     after_ext = sum(1 for r in rows if r["_filed"] >= EXTENSION_DATE)
     safety = sum(1 for r in rows if r.get("safety"))
     cp = sum(1 for r in rows if is_cp(r))
-    kpis = [("", total, "owner complaints reviewed and listed"), ("", cp, "involve CarPlay, Android Auto, or USB"),
-            ("", safety, "describe a safety impact while driving"), ("alert", after_ext, "filed after Subaru extended the warranty")]
+    kpis = [("", total, "owner complaints reviewed and listed"), ("", pct(sum(1 for r in rows if SCREEN_TAGS & set(r["tags"])), total), "report the screen going black, freezing, rebooting, or ghost-touching"),
+            ("", pct(safety, total), "describe a safety impact while driving"), ("alert", after_ext, "filed after Subaru extended the warranty")]
     k = "".join(f'<div class="card kpi {c}"><b>{v}</b><span>{t}</span></div>' for c, v, t in kpis)
     return f"""<div class="wrap">
 <section class="intro">
