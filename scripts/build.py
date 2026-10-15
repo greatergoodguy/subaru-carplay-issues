@@ -273,19 +273,9 @@ def cta(root):
 # ---------- join ----------
 
 def join_page(root, total):
-    if FORM_URL:
-        embed = ""
-        if "docs.google.com/forms" in FORM_URL:
-            src = FORM_URL.split("?")[0].replace("/edit", "/viewform") + "?embedded=true"
-            embed = f'<iframe class="form-embed" src="{e(src)}" title="Legal action sign-up form" loading="lazy">Loading…</iframe>'
-        form = f"""<div class="card join-form" id="sign-up">
-<h2>Sign up</h2>
-<p>About a minute. No Google account needed.</p>
-<p><a class="btn primary big" href="{e(FORM_URL)}" target="_blank" rel="noopener">Open the sign-up form {icon("arrow")}</a></p>
-{embed}
-</div>"""
-    else:
-        form = """<div class="card join-form placeholder" id="sign-up"><h2>Sign up</h2><p>The sign-up form is coming soon.</p></div>"""
+    signup = (f'<a class="btn primary big" href="{e(FORM_URL)}" target="_blank" rel="noopener">Sign up now {icon("arrow")}</a>'
+              '<span class="signup-note">About a minute. No Google account needed.</span>'
+              if FORM_URL else '<span class="signup-note">Sign-up opens soon.</span>')
     contact = f' To be removed or ask a question, email <a href="mailto:{e(CONTACT_EMAIL)}">{e(CONTACT_EMAIL)}</a>.' if CONTACT_EMAIL else ""
     steps = [
         ("pen", "Sign up", "Tell us your car, what's happening, and what the dealer did. It takes about a minute."),
@@ -306,12 +296,11 @@ def join_page(root, total):
 <p class="eyebrow">Legal action</p>
 <h1>Join owners seeking legal action against Subaru</h1>
 <p class="lede">If your 2019–2023 Subaru's CarPlay, USB, Bluetooth, or screen keeps failing and Subaru hasn't fixed it, sign up. We're gathering affected owners and their evidence so consumer-protection law firms can evaluate a class action or group claim. One owner is easy to dismiss. Hundreds with documented failures are not.</p>
-<p><a class="btn primary big" href="#sign-up">Sign up now {icon("arrow")}</a></p>
+<p class="signup">{signup}</p>
 </section>
 <h2 class="join-h2">How it works</h2>
 <div class="jsteps">{step_html}</div>
 <div class="join-grid">
-<div class="join-side">
 <div class="card join-how">
 <h2>What helps a case</h2>
 <p>Start collecting these now, even before anything is filed:</p>
@@ -323,8 +312,6 @@ def join_page(root, total):
 <p>Nothing here is legal advice. Legal deadlines may apply to your situation, so talk to a lawyer if you're considering your own claim.</p>
 <p class="priv">{icon("lock")}<span>Your information is kept in a private sheet, never published or sold, and shared with a law firm only if you check the box allowing it.{contact}</span></p>
 </div>
-</div>
-{form}
 </div>
 </div>"""
 
