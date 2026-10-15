@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://greatergoodguy.github.io/subaru-carplay-issues/sitemap.xml
