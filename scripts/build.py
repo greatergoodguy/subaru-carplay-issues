@@ -74,6 +74,11 @@ ICONS = {
     "users": '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     "arrow": '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     "lock": '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    "scale": '<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+    "pen": '<path d="M12 20h9"/><path d="M16.38 3.62a1 1 0 0 1 3 3L7.37 18.64a2 2 0 0 1-.86.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.86z"/>',
+    "folder": '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+    "check": '<path d="M20 6 9 17l-5-5"/>',
+    "info": '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
     "clipboard": '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
 }
 
@@ -115,7 +120,7 @@ def page(*, title, description, path, body, root, tab, total, jsonld=None):
     tabs = [("complaints", "", "list", f'Complaints <span class="n">{total}</span>'),
             ("stats", "stats/", "chart", "By the numbers"),
             ("record", "record/", "clock", "Subaru's record"),
-            ("join", "join/", "users", "Join the owner list")]
+            ("join", "join/", "scale", "Join legal action")]
     tab_html = "".join(
         f'<a href="{root}{href}"{" aria-current=\"page\"" if key == tab else ""}>{icon(ic)}{label}</a>'
         for key, href, ic, label in tabs)
@@ -254,45 +259,70 @@ def complaints_page(rows, all_rows, root, model=None):
 
 
 def cta(root):
-    return f"""<a class="card cta" href="{root}join/">
-<span class="ic">{icon("users")}</span>
-<span class="txt"><b>Has this happened to your Subaru?</b><span>Join the owner list. More owners with documented problems means more leverage with Subaru, including possible group legal action.</span></span>
-{icon("arrow")}
-</a>"""
+    return f"""<div class="cta-band">
+<div class="cta-main">
+<span class="cta-eyebrow">{icon("scale")}Legal action</span>
+<h2>Had this happen? Join owners seeking legal action against Subaru.</h2>
+<ol class="cta-steps"><li><b>1</b>Sign up in a minute</li><li><b>2</b>We gather owners and evidence</li><li><b>3</b>Law firms review the case</li></ol>
+<p class="cta-fine">No lawsuit has been filed yet. Free, and you're not committing to anything.</p>
+</div>
+<a class="cta-btn" href="{root}join/">Join the legal action list {icon("arrow")}</a>
+</div>"""
 
 
 # ---------- join ----------
 
-def join_page(root):
+def join_page(root, total):
     if FORM_URL:
         embed = ""
         if "docs.google.com/forms" in FORM_URL:
             src = FORM_URL.split("?")[0].replace("/edit", "/viewform") + "?embedded=true"
-            embed = f'<iframe class="form-embed" src="{e(src)}" title="Owner list sign-up form" loading="lazy">Loading…</iframe>'
-        form = f"""<div class="card join-form">
+            embed = f'<iframe class="form-embed" src="{e(src)}" title="Legal action sign-up form" loading="lazy">Loading…</iframe>'
+        form = f"""<div class="card join-form" id="sign-up">
 <h2>Sign up</h2>
-<p>It takes about a minute. No Google account needed.</p>
+<p>About a minute. No Google account needed.</p>
 <p><a class="btn primary big" href="{e(FORM_URL)}" target="_blank" rel="noopener">Open the sign-up form {icon("arrow")}</a></p>
 {embed}
 </div>"""
     else:
-        form = """<div class="card join-form placeholder"><h2>Sign up</h2><p>The sign-up form is coming soon.</p></div>"""
+        form = """<div class="card join-form placeholder" id="sign-up"><h2>Sign up</h2><p>The sign-up form is coming soon.</p></div>"""
     contact = f' To be removed or ask a question, email <a href="mailto:{e(CONTACT_EMAIL)}">{e(CONTACT_EMAIL)}</a>.' if CONTACT_EMAIL else ""
+    steps = [
+        ("pen", "Sign up", "Tell us your car, what's happening, and what the dealer did. It takes about a minute."),
+        ("folder", "We build the case file", f"Sign-ups are combined with the {total} public NHTSA complaints and Subaru's own bulletins into one record of the defect and the failed repairs."),
+        ("scale", "Law firms review it", "With your permission, your details go to consumer-protection law firms that handle auto-defect class actions. If a firm takes the case, it contacts you directly."),
+    ]
+    step_html = "".join(
+        f'<div class="card jstep"><span class="num">{i}</span><span class="ic">{icon(ic)}</span><h3>{t}</h3><p>{d}</p></div>'
+        for i, (ic, t, d) in enumerate(steps, 1))
+    evidence = ["Repair orders that mention the problem, even ones that say \"could not duplicate\"",
+                "Videos of the failure happening",
+                "Purchase or lease paperwork showing the delivery date",
+                "Receipts for anything you paid: diagnostics, parts, cables",
+                "Dates and mileage of each dealer visit"]
+    ev_html = "".join(f"<li>{icon('check')}<span>{x}</span></li>" for x in evidence)
     return f"""<div class="wrap">
-<section class="intro">
-<p class="eyebrow">Join the owner list</p>
-<h1>Owners are stronger together</h1>
-<p class="lede">If your 2019–2023 Subaru's CarPlay, USB, Bluetooth, or screen keeps failing, add yourself to the list. One complaint is easy to dismiss. Hundreds of documented owners are not, whether the goal is getting Subaru to fix cars or talking with a consumer-protection law firm about group action.</p>
+<section class="intro join-intro">
+<p class="eyebrow">Legal action</p>
+<h1>Join owners seeking legal action against Subaru</h1>
+<p class="lede">If your 2019–2023 Subaru's CarPlay, USB, Bluetooth, or screen keeps failing and Subaru hasn't fixed it, sign up. We're gathering affected owners and their evidence so consumer-protection law firms can evaluate a class action or group claim. One owner is easy to dismiss. Hundreds with documented failures are not.</p>
+<p><a class="btn primary big" href="#sign-up">Sign up now {icon("arrow")}</a></p>
 </section>
+<h2 class="join-h2">How it works</h2>
+<div class="jsteps">{step_html}</div>
 <div class="join-grid">
+<div class="join-side">
 <div class="card join-how">
-<h2>What happens when you join</h2>
-<ol>
-<li><b>You get occasional updates</b> about this issue: new bulletins, repair outcomes, and next steps. No spam, and you can leave anytime.</li>
-<li><b>If enough owners join,</b> the list may be used to approach consumer-protection law firms about whether a group case makes sense.</li>
-<li><b>Your details go to a law firm only if you say so.</b> The form has a separate checkbox for that.</li>
-</ol>
-<p class="note">{icon("lock")} This site is run by a Subaru owner, not a law firm. Joining doesn't make you part of any lawsuit, and nothing here is legal advice. Your email is kept in a private sheet, never published, and never sold.{contact}</p>
+<h2>What helps a case</h2>
+<p>Start collecting these now, even before anything is filed:</p>
+<ul class="evidence">{ev_html}</ul>
+</div>
+<div class="card join-important">
+<h2>{icon("info")}Important</h2>
+<p><b>No lawsuit has been filed yet.</b> This site is run by a Subaru owner, not a law firm. Signing up is free. It doesn't make you anyone's client or a member of any class, and it doesn't commit you to anything.</p>
+<p>Nothing here is legal advice. Legal deadlines may apply to your situation, so talk to a lawyer if you're considering your own claim.</p>
+<p class="priv">{icon("lock")}<span>Your information is kept in a private sheet, never published or sold, and shared with a law firm only if you check the box allowing it.{contact}</span></p>
+</div>
 </div>
 {form}
 </div>
@@ -482,9 +512,9 @@ def build():
         path="record/", body=record_page(rows, "../"), root="../", tab="record", **common)))
 
     pages.append(("join/index.html", page(
-        title="Join the Subaru CarPlay & Infotainment Owner List",
-        description="Owners of 2019–2023 Subarus with CarPlay, USB, Bluetooth, or head unit failures: join the owner list for updates and possible group action.",
-        path="join/", body=join_page("../"), root="../", tab="join", **common)))
+        title="Join Owners Seeking Legal Action Against Subaru: CarPlay & Infotainment Failures",
+        description="Owners of 2019–2023 Subarus with CarPlay, USB, Bluetooth, or head unit failures: sign up so consumer-protection law firms can evaluate a class action or group claim.",
+        path="join/", body=join_page("../", total), root="../", tab="join", **common)))
 
     for rel, content in pages:
         out = os.path.join(ROOT, rel)
